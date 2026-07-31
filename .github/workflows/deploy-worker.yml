@@ -1,0 +1,25 @@
+name: Deploy Cloudflare Worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - name: Deploy Worker with encrypted OpenAI secret
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY" > .worker-secrets
+          npx wrangler deploy --config worker/wrangler.jsonc --secrets-file .worker-secrets
+          rm .worker-secrets

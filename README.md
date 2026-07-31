@@ -63,6 +63,15 @@ The app works fully with local, deterministic retrieval. To activate **Generate 
 
 The Worker defaults to the explicitly configured `o3-mini` model; change `OPENAI_MODEL` in `worker/wrangler.jsonc` if you want a current model. The OpenAI key must be freshly rotated and must never be pasted into source control or chat.
 
+### Deploy from GitHub Actions
+
+If you do not deploy from your terminal, add these **repository secrets** in GitHub under **Settings → Secrets and variables → Actions**:
+
+- `CLOUDFLARE_API_TOKEN`: a restricted Cloudflare API token that can deploy Workers to your account.
+- `OPENAI_API_KEY`: a newly rotated OpenAI API key.
+
+Then run the **Deploy Cloudflare Worker** workflow from the repository’s Actions tab. The workflow sends the OpenAI key directly to Cloudflare as the Worker’s encrypted secret; it is never included in the generated Pages site or repository files.
+
 ## Safety note
 
 This is a local-only, deterministic RAG demonstration: it does not use a live model or call external services. It retrieves from bundled synthetic policy chunks and never processes actual customer information.
