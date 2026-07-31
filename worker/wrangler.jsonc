@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "clearline-finance-call-assist-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-31",
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGIN": "https://sf9393.github.io",
+    "OPENAI_MODEL": "o3-mini"
+  },
+  "secrets": {
+    "required": ["OPENAI_API_KEY"]
+  }
+}

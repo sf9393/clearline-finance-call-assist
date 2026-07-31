@@ -2,9 +2,25 @@ import { useMemo, useState } from 'react'
 import { demos } from './policies'
 import { responseFor } from './rag'
 
+type AiAdvice = { response: string; requiredSteps: string[]; escalation: string; confidence: 'High' | 'Medium' | 'Review needed'; sourceIds: string[] }
+const apiUrl = import.meta.env.VITE_CALL_ASSIST_API_URL?.replace(/\/$/, '')
+
 export default function App() {
   const [query, setQuery] = useState(demos[0].query)
-  const result = useMemo(() => responseFor(query), [query])
+  const [aiAdvice, setAiAdvice] = useState<AiAdvice | null>(null)
+  const [aiState, setAiState] = useState<'idle' | 'loading' | 'error'>('idle')
+  const localResult = useMemo(() => responseFor(query), [query])
+  const result = aiAdvice ? { ...localResult, response: aiAdvice.response, steps: aiAdvice.requiredSteps, warning: aiAdvice.escalation, confidence: aiAdvice.confidence, sources: localResult.sources.filter((source) => aiAdvice.sourceIds.includes(source.policyId)) } : localResult
+  async function generateAdvice() {
+    if (!apiUrl) { setAiState('error'); return }
+    setAiState('loading'); setAiAdvice(null)
+    try {
+      const response = await fetch(`${apiUrl}/assist`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query }) })
+      const body = await response.json() as AiAdvice & { error?: string }
+      if (!response.ok || body.error) throw new Error(body.error)
+      setAiAdvice(body); setAiState('idle')
+    } catch { setAiState('error') }
+  }
   return <main className="app-shell">
     <header className="topbar">
       <div className="brand-mark">CL</div><div><p className="eyebrow">CLEARLINE FINANCE · SYNTHETIC DEMO</p><h1>Call Assist</h1></div>
@@ -16,8 +32,10 @@ export default function App() {
         <p className="section-label">Customer issue</p>
         <h2>What did the customer say?</h2>
         <label htmlFor="query">Agent question or call summary</label>
-        <textarea id="query" value={query} onChange={(event) => setQuery(event.target.value)} />
-        <div className="demo-list"><p className="section-label">Try a demo</p>{demos.map((demo) => <button className={query === demo.query ? 'active' : ''} key={demo.label} onClick={() => setQuery(demo.query)}>{demo.label}<span>›</span></button>)}</div>
+        <textarea id="query" value={query} onChange={(event) => { setQuery(event.target.value); setAiAdvice(null); setAiState('idle') }} />
+        <button className="ai-button" onClick={generateAdvice} disabled={aiState === 'loading'}>{aiState === 'loading' ? 'Generating advice…' : 'Generate with OpenAI'}</button>
+        {aiState === 'error' && <p className="ai-error">{apiUrl ? 'AI guidance is unavailable. Showing local policy guidance.' : 'AI endpoint is not configured. Showing local policy guidance.'}</p>}
+        <div className="demo-list"><p className="section-label">Try a demo</p>{demos.map((demo) => <button className={query === demo.query ? 'active' : ''} key={demo.label} onClick={() => { setQuery(demo.query); setAiAdvice(null); setAiState('idle') }}>{demo.label}<span>›</span></button>)}</div>
         <p className="local-note">Local-only retrieval · No customer data stored</p>
       </aside>
       <section className="panel response-panel">

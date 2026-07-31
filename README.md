@@ -51,6 +51,18 @@ make check    # run tests and build
 
 No customer data, API keys, or production finance content will be required or accepted by the demo.
 
+## Optional Cloudflare Worker AI gateway
+
+The app works fully with local, deterministic retrieval. To activate **Generate with OpenAI** for any entered question, deploy the included Worker. The API key stays only in Cloudflare; do not put it in GitHub, a Vite variable, or browser code.
+
+1. Install dependencies with `make install`, then authenticate with `npx wrangler login`.
+2. Deploy the Worker: `make worker-deploy`.
+3. Set a newly rotated key as a Cloudflare Worker secret: `npx wrangler secret put OPENAI_API_KEY --config worker/wrangler.jsonc`.
+4. In the GitHub repository, create an **Actions variable** named `CALL_ASSIST_API_URL` whose value is the Worker URL (for example, `https://clearline-finance-call-assist-api.<your-subdomain>.workers.dev`). This is an endpoint URL, not a secret.
+5. Re-run the GitHub Pages workflow to rebuild the site with that endpoint.
+
+The Worker defaults to the explicitly configured `o3-mini` model; change `OPENAI_MODEL` in `worker/wrangler.jsonc` if you want a current model. The OpenAI key must be freshly rotated and must never be pasted into source control or chat.
+
 ## Safety note
 
 This is a local-only, deterministic RAG demonstration: it does not use a live model or call external services. It retrieves from bundled synthetic policy chunks and never processes actual customer information.
